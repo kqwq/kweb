@@ -91,7 +91,7 @@ async function runPythonCode(interaction, code) {
 async function runJavaScriptCode(interaction, code) {
   let stdout = ''
   let stderr = ''
-  interaction.deferReply({ flags: MessageFlags.SuppressEmbeds })
+  await interaction.deferReply({ flags: MessageFlags.SuppressEmbeds })
   await new Promise((resolve, reject) => {
     try {
       const nodejsProcess = spawn('firejail', ['--quite', '--net=none', '--private', 'timeout', '5', 'node', '-e', code])
@@ -138,7 +138,7 @@ async function runJavaScriptCode(interaction, code) {
       color: 0xffff00,
     })
   }
-  interaction.editReply({ embeds: embeds })
+  await interaction.editReply({ embeds: embeds })
 }
 
 
