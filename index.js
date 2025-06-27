@@ -2,6 +2,8 @@
 import { Client, Collection, Events, GatewayIntentBits, MessageFlags } from 'discord.js'
 import { readdirSync, readFileSync } from 'fs'
 import { getKV, initKv } from './kv.js'
+import { handleReaction } from './commands/reaction-role.js'
+import { detectLanguageAndCode, runJavaScriptCode, runPythonCode } from './runCode.js'
 const config = JSON.parse(readFileSync('config.json', 'utf-8'))
 
 // The token of your bot - https://discord.com/developers/applications
@@ -36,81 +38,56 @@ await Promise.all(
   })
 )
 
-client.once(Events.ClientReady, readyClient => {
+client.once('ready', readyClient => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}`)
   fetchReactionRoleMessages()
 })
 
 client.on(Events.InteractionCreate, async interaction => {
-  if (!interaction.isChatInputCommand()) return
-  const command = client.commands.get(interaction.commandName)
-  if (!command) {
-    console.error(`No command matching ${interaction.commandName} was found.`)
-    return
-  }
-  try {
-    await command.execute(interaction)
-  } catch (error) {
-    console.error(`Error executing command ${interaction.commandName}:`, error)
-    await interaction.reply({
-      embeds: [
-        {
-          title: 'Error',
-          description: `There was an error while executing this command!\n\`\`\`${error.message}\`\`\``,
-          color: 0xff0000
-        }
-      ],
-    })
+  if (interaction.isChatInputCommand()) {
+    const command = client.commands.get(interaction.commandName)
+    if (!command) {
+      console.error(`No command matching ${interaction.commandName} was found.`)
+      return
+    }
+    try {
+      await command.execute(interaction)
+    } catch (error) {
+      console.error(`Error executing command ${interaction.commandName}:`, error)
+      await interaction.reply({
+        embeds: [
+          {
+            title: 'Error',
+            description: `There was an error while executing this command!\n\`\`\`${error.message}\`\`\``,
+            color: 0xff0000
+          }
+        ],
+      })
+    }
+  } else if (interaction.isContextMenuCommand()) {
+    if (interaction.commandName === 'Run Code') {
+      const { language, code } = detectLanguageAndCode(interaction.targetMessage.content)
+      if (language === 'python') {
+        await runPythonCode(interaction, code)
+      } else if (language === 'javascript') {
+        await runJavaScriptCode(interaction, code)
+      } else {
+        interaction.reply('I can only run Python and JavaScript code right now, not `' + language + '`.')
+      }
+    }
   }
 })
 
 
 client.on('messageReactionAdd', async (reaction, user) => {
-  // Ignore bot reactions
-  if (user.bot) return
-
-  // Check if reaction is on one of the messages you're tracking
-  const reactionRoles = getKV('reactionRoles') || []
-  const match = reactionRoles.find(role =>
-    reaction.message.id === role.messageId &&
-    reaction.message.channel.id === role.channelId &&
-    reaction.message.guild.id === role.guildId
-  )
-
-  if (!match) return // Not a message we care about
-
-  // Handle the reaction
-  const guild = reaction.message.guild
-  const member = guild.members.cache.get(user.id)
-  const role = guild.roles.cache.get(match.roleId)
-
-  if (role && member) {
-    await member.roles.add(role)
-    console.log(`Added role ${role.name} to ${member.user.tag}`)
-  }
+  handleReaction(reaction, user, true)
 })
 
 client.on('messageReactionRemove', async (reaction, user) => {
-  if (user.bot) return
-
-  const reactionRoles = getKV('reactionRoles') || []
-  const match = reactionRoles.find(role =>
-    reaction.message.id === role.messageId &&
-    reaction.message.channel.id === role.channelId &&
-    reaction.message.guild.id === role.guildId
-  )
-
-  if (!match) return
-
-  const guild = reaction.message.guild
-  const member = guild.members.cache.get(user.id)
-  const role = guild.roles.cache.get(match.roleId)
-
-  if (role && member) {
-    await member.roles.remove(role)
-    console.log(`Removed role ${role.name} from ${member.user.tag}`)
-  }
+  handleReaction(reaction, user, false)
 })
+
+
 
 // On startup, fetch all reaction roles from kv.json
 async function fetchReactionRoleMessages() {

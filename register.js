@@ -1,9 +1,14 @@
-import { REST, Routes } from 'discord.js'
+import { ApplicationCommandType, REST, Routes } from 'discord.js'
 import fs from 'node:fs'
 import path from 'node:path'
 const { clientId, guildId, token } = JSON.parse(fs.readFileSync('config.json', 'utf-8'))
 
-const commands = []
+const commands = [
+  {
+    name: 'Run Code',
+    type: ApplicationCommandType.Message
+  }
+]
 
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'))
 for (const file of commandFiles) {

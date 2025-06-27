@@ -1,7 +1,43 @@
 import { SlashCommandBuilder } from "discord.js"
 import { getKV, setKV } from "../kv.js"
 
-export const data = new SlashCommandBuilder()
+/**
+ * 
+ * @param {import("discord.js").MessageReaction} reaction 
+ * @param {import("discord.js").User} user
+ */
+const handleReaction = async (reaction, user, isAdd) => {
+  if (user.bot) return
+
+  // Check if reaction is on one of the messages you're tracking
+  const reactionRoles = getKV('reactionRoles') || []
+  const match = reactionRoles.find(role =>
+    reaction.message.id === role.messageId &&
+    reaction.message.channel.id === role.channelId &&
+    reaction.message.guild.id === role.guildId
+  )
+
+  if (!match) return // Not a message we care about
+
+  // Handle the reaction
+  const guild = reaction.message.guild
+  const member = guild.members.cache.get(user.id)
+  const role = guild.roles.cache.get(match.roleId)
+
+  if (role && member) {
+    if (isAdd) {
+      await member.roles.add(role)
+      console.log(`Added role ${role.name} to ${member.user.tag}`)
+    } else {
+      await member.roles.remove(role)
+      console.log(`Removed role ${role.name} from ${member.user.tag}`)
+    }
+  }
+}
+
+
+
+const data = new SlashCommandBuilder()
   .setName("reaction-role")
   .setDescription("Assign a role when a user reacts with an emoji to a message")
   .addRoleOption(option =>
@@ -23,7 +59,7 @@ export const data = new SlashCommandBuilder()
  * @param {import("discord.js").ChatInputCommandInteraction} interaction
  * @returns 
  */
-export async function execute(interaction) {
+async function execute(interaction) {
   // Block if the user does not have the MANAGE_ROLES permission
   if (!interaction.member.permissions.has("ManageRoles")) {
     return interaction.reply({
@@ -80,3 +116,4 @@ export async function execute(interaction) {
   })
 }
 
+export { data, execute, handleReaction }
