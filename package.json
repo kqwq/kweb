@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "discord.js": "^14.21.0"
+  },
+  "name": "kweb",
+  "version": "1.0.0",
+  "main": "index.js",
+  "devDependencies": {
+    "@eslint/js": "^9.29.0",
+    "eslint": "^9.29.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "kqwq",
+  "license": "ISC",
+  "description": "",
+  "type": "module"
+}
