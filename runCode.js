@@ -32,7 +32,7 @@ async function runPythonCode(interaction, code) {
   await interaction.deferReply({ flags: MessageFlags.SuppressEmbeds })
   await new Promise((resolve, reject) => {
     try {
-      const pythonProcess = spawn('firejail', ['--net=none', '--private', 'timeout', '5', 'python3', '-c', code])
+      const pythonProcess = spawn('firejail', ['--quiet', '--net=none', '--private', 'timeout', '5', 'python3', '-c', code])
       pythonProcess.stdout.on('data', (data) => {
         stdout += data.toString()
       })
@@ -94,7 +94,7 @@ async function runJavaScriptCode(interaction, code) {
   interaction.deferReply({ flags: MessageFlags.SuppressEmbeds })
   await new Promise((resolve, reject) => {
     try {
-      const nodejsProcess = spawn('firejail', ['--net=none', '--private', 'timeout', '5', 'node', '-e', code])
+      const nodejsProcess = spawn('firejail', ['--quite', '--net=none', '--private', 'timeout', '5', 'node', '-e', code])
       nodejsProcess.stdout.on('data', (data) => {
         stdout += data.toString()
       })
